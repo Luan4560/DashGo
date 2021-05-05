@@ -1,14 +1,40 @@
-import {Box, Flex, Button, Heading, Icon, Table, Tr, Th, Checkbox, Thead, Tbody, Td, Text, useBreakpointValue} from '@chakra-ui/react' 
+
+import {Box, Flex, Button, Heading, Icon, Table, Tr, Th, Checkbox, Thead, Tbody, Td, Text, useBreakpointValue, Spinner} from '@chakra-ui/react' 
 import Link from 'next/link'
-import { RiAddLine, RiPencilLine } from 'react-icons/ri'
+import { useEffect } from 'react'
+import { RiAddLine } from 'react-icons/ri'
+import {useQuery} from 'react-query'
+
 import {Header} from '../../components/Header'
 import { Pagination } from '../../components/Pagination'
 import { Sidebar } from '../../components/Sidebar'
+
 export default function UserList() {
+  const {data, isLoading, error} = useQuery('users', async() => {
+    const response = await fetch('http://localhost:3000/api/users')
+    const data = await response.json()
+
+    const users = data.users.map(user => {
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: new Date(user.createdAt).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        })
+      }
+    })
+
+    return users;
+  });
+
   const isWideVersion =  useBreakpointValue({
     base: false,
     lg: true,
   })
+
 
   return (
     <Box>
@@ -34,7 +60,17 @@ export default function UserList() {
             </Link>
           </Flex>
           
-          <Table colorScheme="whiteAlpha">
+          {isLoading ? (
+            <Flex justify="center">
+              <Spinner />
+            </Flex>
+          ) : error ? (
+            <Flex justify="center">
+              <Text>Failed to load users</Text>
+            </Flex>
+          ) : (
+            <>
+            <Table colorScheme="whiteAlpha">
             <Thead>
               <Tr>
                 <Th px={["4", "4", "6"]} color="gray.300" width="8">
@@ -47,25 +83,28 @@ export default function UserList() {
             </Thead>
            
             <Tbody>
-              <Tr>
-                <Td px={["4", "4", "6"]}>
-                  <Checkbox colorScheme="pink"/>
-                </Td>
-
-                <Td>
-                  <Box>
-                    <Text fontWeight="bold">Luan Nascimento</Text>
-                    <Text fontSize="sm" color="gray.300">luan.nascimento11@outlook.com</Text>
-                  </Box>
-                </Td>
-
-                {isWideVersion && <Th>19 de Abril, 2021</Th>}
-                
-              </Tr>
+              {data.map(user => (
+                 <Tr key={user.id}>
+                 <Td px={["4", "4", "6"]}>
+                   <Checkbox colorScheme="pink"/>
+                 </Td>
+ 
+                 <Td>
+                   <Box>
+                     <Text fontWeight="bold">{user.name}</Text>
+                     <Text fontSize="sm" color="gray.300">{user.email}</Text>
+                   </Box>
+                 </Td>
+ 
+                 {isWideVersion && <Td>{user.createdAt}</Td>}               
+               </Tr>
+              ))}
             </Tbody>
           </Table>
 
           <Pagination/>
+          </>
+          )}
         </Box>
       </Flex>
     </Box>
